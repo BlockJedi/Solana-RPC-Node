@@ -293,9 +293,7 @@ vm.max_map_count = 1000000
 fs.nr_open = 1000000
 EOF"
 ```
-```
-sudo nano /etc/systemd/system/systuner.service
-```
+]
 Increase systemd and session file limits
 
 Add
