@@ -184,7 +184,7 @@ solana config set --keypair ~/validator-keypair.json
 
 solana-keygen new -o ~/vote-account-keypair.json
 ```
-Making system services (sol.service and systuner.service) and the startup script.
+Making system services (sol.service) and the startup script.
 
 This is the solana-validator start up shell script which the system service (sol.service) will reference
 ```
@@ -383,10 +383,6 @@ Save / exit `ctrl+0` then `ctrl+x`
 # Start up and test the Solana Node
 
 ```
-sudo systemctl enable --now systuner.service
-
-sudo systemctl status systuner.service
-
 sudo systemctl enable --now sol.service
 
 sudo systemctl status sol.service
