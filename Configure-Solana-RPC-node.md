@@ -154,7 +154,7 @@ These additional rules are in preparation for more Protocol features. Just drop 
 ```
 sudo ufw allow 53;sudo ufw allow 8899;sudo ufw allow 8899/tcp;sudo ufw allow 8900/tcp;sudo ufw allow 9900/udp;sudo ufw allow 9900/tcp;sudo ufw allow 9900;sudo ufw allow 8900;sudo ufw allow 8000:8012/udp
 ```
-# Install the Solana CLI! Don't forget to check for current version (1.8.14 as of 02/16/2022)
+# Install the Solana CLI! Don't forget to check for current version (1.16.15)
 
 ```
 sh -c "$(curl -sSfL https://release.solana.com/v1.16.15/install)"
@@ -259,46 +259,64 @@ Edit this into file:
 [Unit]
 Description=Solana Validator
 After=network.target
-Wants=systuner.service
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-Restart=on-failure
+Restart=always
 RestartSec=1
+User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
-User=sol
-Environment=PATH=/bin:/usr/bin:/home/sol/.local/share/solana/install/active_release/bin
-Environment=SOLANA_METRICS_CONFIG=host=https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password
-ExecStart=/home/sol/start-validator.sh
+Environment="PATH=/bin:/usr/bin:/home/sol/.local/share/solana/install/active_release/bin"
+ExecStart=/home/sol/bin/validator.sh
 
 [Install]
 WantedBy=multi-user.target
 ```
 Save / exit `ctrl+0` then `ctrl+x`
 
-Make system tuner service - systuner.service
+Now start manual tunning
+
+```
+sudo bash -c "cat >/etc/sysctl.d/21-solana-validator.conf <<EOF
+# Increase UDP buffer sizes
+net.core.rmem_default = 134217728
+net.core.rmem_max = 134217728
+net.core.wmem_default = 134217728
+net.core.wmem_max = 134217728
+
+# Increase memory mapped files limit
+vm.max_map_count = 1000000
+
+# Increase number of allowed open file descriptors
+fs.nr_open = 1000000
+EOF"
+```
 ```
 sudo nano /etc/systemd/system/systuner.service
 ```
-Edit this into file:
-```
-[Unit]
-Description=Solana System Tuner
-After=network.target
-[Service]
-Type=simple
-Restart=on-failure
-RestartSec=1
-LogRateLimitIntervalSec=0
-ExecStart=/home/sol/.local/share/solana/install/active_release/bin/solana-sys-tuner --user sol
-[Install]
-WantedBy=multi-user.target
-```
-Save / exit `ctrl+0` then `ctrl+x`
+Increase systemd and session file limits
 
-Reload the system services
+Add
+```
+LimitNOFILE=1000000
+```
+to the [Service] section of your systemd service file, if you use one, otherwise add
+```
+DefaultLimitNOFILE=1000000
+```
+to the [Manager] section of /etc/systemd/system.conf.
+```
+sudo systemctl daemon-reload
+```
+```
+sudo bash -c "cat >/etc/security/limits.d/90-solana-nofiles.conf <<EOF
+# Increase process file descriptor count limit
+* - nofile 1000000
+EOF"
+```
+
 ```
 sudo systemctl daemon-reload
 ```
